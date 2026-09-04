@@ -102,6 +102,9 @@ jobs:
       - name: Migrate PostgreSQL + pgvector
         run: php artisan migrate:fresh --force
 
+      - name: Generate Wayfinder TypeScript
+        run: php artisan wayfinder:generate --with-form
+
       - name: Build client + SSR assets
         run: npm run build:ssr
 
