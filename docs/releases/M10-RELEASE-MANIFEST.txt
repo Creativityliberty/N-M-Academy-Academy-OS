@@ -1,0 +1,9 @@
+NÜM Academy OS — M10 Sales Engine
+Version: 0.10.0
+Date: 2026-08-31
+Source files before packaging: 613
+Topology: app + PostgreSQL 17/pgvector + Redis
+MCP: M08 core + M09 student subset + M10 commerce tools
+Providers retained: OpenAI + DeepSeek
+Dependency directories are excluded from the source release.
+See M10-VERIFICATION.md for gates and known environment blockers.

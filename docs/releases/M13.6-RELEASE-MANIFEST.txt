@@ -1,0 +1,12 @@
+NÜM Academy OS v1.1.7 — M13.6 Canonical Course Domain + AI/Tower CRUD
+Cumulative M01→M13.6
+Baseline: v1.1.6 M13.5.1 Course + Release Hardening
+Runtime: app + PostgreSQL 17/pgvector + Redis
+Course domain: positioning + audience + level + language + cover/thumbnail + text lesson + optional narration
+AI media: provider-neutral image/TTS contracts with OpenAI adapters + disabled fallback
+Tower/MCP: granular categories/courses/modules/lessons/offers/pages/media CRUD
+Governance: offers.update SENSITIVE; offer tools FINANCIAL; publish/unpublish/archive remain canonical
+CI: M07→M13.6 contracts + pgvector/Redis integration + migrate:fresh + SSR + TypeScript + Pest + production Docker build gate
+Packaged vendor/node_modules: no
+Fonts: no
+Real .env/secrets: no

@@ -1,0 +1,7 @@
+NÜM Academy OS v1.1.5 — M13.5 Durable Memory
+Cumulative M01→M13.5
+Runtime: app + PostgreSQL 17/pgvector + Redis
+Memory: versioned store + retrieval + rolling summary + Memory Center
+CI: pgvector/Redis integration + build:ssr + Pest + production Docker build gate
+Packaged vendor/node_modules: no
+Secrets: no

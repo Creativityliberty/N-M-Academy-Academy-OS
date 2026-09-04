@@ -1,0 +1,14 @@
+NÜM Academy OS v1.1.9 — M13.8 Mission Tower Chat UX + Rich Response Renderer
+Date: 2026-09-01
+Cumulative: M01 → M13.8
+
+Highlights:
+- Existing Tower sidebar/menu/shell/routes preserved
+- Safe rich Markdown assistant rendering without dangerouslySetInnerHTML
+- Headings, emphasis, strike, lists/tasks, blockquotes, responsive tables, links, inline/fenced code
+- Copyable code with lightweight highlighting
+- Tool / Mission / Approval / Evidence cards from real Tower records
+- Compact truthful Tower Activity Orb while synchronous request is active
+- Sticky composer, Cmd/Ctrl+Enter, Copy and Retry
+- Intelligent auto-scroll
+- No fake streaming and no fake server-side Stop semantics

@@ -1,0 +1,24 @@
+NÜM Academy OS v1.1.8 — M13.7 AI Course Creation Engine / One‑Brief‑to‑Course
+Date: 2026-09-01
+Cumulative: M01 → M13.7
+Baseline: v1.1.7 M13.6
+
+Primary additions:
+- durable CourseCreationRun orchestration
+- one brief → draft course creation workflow
+- real persisted progress and resumable essential failures
+- optional AI cover / thumbnail
+- optional per-lesson AI narration, one lesson per advance request
+- deterministic M10 default CourseOffer
+- optional M11 landing page draft bound to the generated course
+- review-only completion; no automatic publish
+- accessible lightweight Thinking Orb mapped to real workflow state
+- CI contract and Laravel feature coverage for M13.7
+
+Release exclusions:
+- vendor/
+- node_modules/
+- package caches
+- font binaries
+- real .env files
+- provider/runtime secrets

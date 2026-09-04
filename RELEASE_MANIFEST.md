@@ -1,0 +1,22 @@
+# NÜM Academy OS — Release Manifest
+
+- Version: 1.6.0
+- Milestone: M15.1 — Drip, Prérequis & Unlock Rules
+- Date: 2026-09-03
+- Cumulative: M01 → M15.1
+- Access authority: `LearningAccessService` is the canonical runtime evaluator; legacy `CourseAccessService` is a compatibility adapter only
+- Entitlement: `Enrollment.access_rank → Module.minimum_access_rank` remains the commercial/tier boundary
+- Unlock rules: enrollment delay, fixed datetime, module completed, lesson completed, assessment passed, assignment approved
+- Rule composition: all enabled rules on a target are AND; authoring rejects self/forward dependencies
+- Targets: module, lesson, assessment and assignment
+- Progress: overall course progress uses tier-entitled lessons while next-content discovery uses lessons unlocked now
+- Completion safety: future drip content remains in tier-entitled completion scope, preventing early 100% and certificate issuance
+- Student security: Course Player props/media, progress, notes, assessments, assignments, Tutor, RAG retrieval and student MCP use canonical access decisions
+- Trainer UX: dedicated `Drip & prérequis` workspace separate from the main course edit form
+- MCP/Tower: `learning.access.rules.list/create/update/delete` reuse `UnlockRuleDefinitionService`; no parallel rule engine
+- Factory: `drip` is a first-class Learning capability in Essential/Creator/Pro and emits `ACADEMY_FEATURE_DRIP` to Coolify
+- Mission Tower: preserved in-process runtime, French-by-default responses, governed approvals/evidence and `thinking-orbs@^0.3.1`
+- Runtime topology: Laravel/React app + PostgreSQL 17/pgvector + Redis + persistent application/community/assignment storage
+- Real CI target: Node 24 + PostgreSQL 17/pgvector + Redis + Composer/npm + migrations + contracts + Pest + Vite/SSR + Docker production build
+- Packaged dependencies: intentionally excluded (`vendor/`, `node_modules/`)
+- Provider/runtime secrets: never packaged

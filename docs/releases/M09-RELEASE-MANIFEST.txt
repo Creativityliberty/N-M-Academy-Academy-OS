@@ -1,0 +1,34 @@
+NÜM Academy OS — Release Manifest
+Version: 0.9.0
+Milestone: M09 — AI Tutor + RAG
+Date: 2026-08-31
+
+Cumulative milestones included:
+- M01 Academy Core / Coolify foundation
+- M02 Premium UI / Theme Engine
+- M03 Student Experience
+- M04 Creator Studio
+- M05 Community
+- M06 Events
+- M07 Academy AI
+- M07.1 DeepSeek provider
+- M08 Academy MCP Gateway
+- M09 AI Tutor + RAG
+
+M09 source-gate status before packaging:
+- M08 MCP contract: PASS
+- M09 Tutor contract: PASS
+- PHP syntax: PASS (258 files)
+- Prettier targeted M09: PASS
+- ESLint targeted M09: PASS (import/order disabled only because offline native resolver is unavailable)
+- TypeScript non-Wayfinder errors: 0
+- TypeScript Wayfinder generated-import diagnostics: 85
+- Coolify topology: PASS (app + pgvector PostgreSQL 17 + Redis)
+- Font files: 0
+- Secret-like credential scan: PASS
+
+Environment-blocked gates:
+- Pest/Laravel: BLOCKED because vendor/autoload.php is absent and Composer is unavailable in this runtime.
+- Vite SSR build: BLOCKED because @rolldown/binding-linux-x64-gnu is absent from the offline npm cache.
+
+The release ZIP intentionally excludes node_modules, vendor, .npm-cache, .git, .claude, runtime caches and logs.

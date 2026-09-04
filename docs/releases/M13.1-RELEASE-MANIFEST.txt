@@ -1,0 +1,40 @@
+NÜM Academy OS v1.1.1 — M13.1 Mission Tower Operations
+Date: 2026-08-31
+
+Cumulative scope:
+M01 Core
+M02 Premium UI / Theme Engine
+M03 Student Experience
+M04 Creator Studio
+M05 Community
+M06 Events
+M07 Academy AI
+M07.1 DeepSeek
+M08 Academy MCP Gateway
+M09 AI Tutor + RAG
+M10 Sales Engine
+M11 Page Builder
+M12 Academy Factory
+M13.0 Mission Tower Foundation
+M13.1 Missions / Approvals / Runs / Evidence
+
+M13.1 persistence:
+- tower_missions
+- tower_mission_steps
+- tower_runs
+- tower_approvals
+- tower_evidence
+
+M13.1 execution:
+- sequential Academy MCP tool plans
+- READ auto execution
+- WRITE/SENSITIVE MCP input_required suspension
+- encrypted requestState persistence
+- typed phrase for SENSITIVE approval
+- exact MCP retry via inputResponses
+- receipt-linked Evidence ledger
+- trainer ownership + admin/super-admin observability
+
+Environment limitations in source-only QA runtime:
+- Pest BLOCKED: vendor/autoload.php absent
+- Vite SSR BLOCKED: @rolldown/binding-linux-x64-gnu absent from offline cache

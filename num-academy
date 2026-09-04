@@ -1,0 +1,236 @@
+#!/bin/sh
+set -eu
+
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ENV_FILE=${NUM_ACADEMY_ENV_FILE:-"$ROOT_DIR/.env.num-academy"}
+ENV_EXAMPLE="$ROOT_DIR/.env.num-academy.example"
+COMPOSE_PROD="$ROOT_DIR/docker-compose.coolify.yml"
+COMPOSE_LOCAL="$ROOT_DIR/docker-compose.local.yml"
+
+say() { printf '%s\n' "$*"; }
+err() { printf 'ERREUR: %s\n' "$*" >&2; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+env_get() {
+    key=$1
+    [ -f "$ENV_FILE" ] || return 0
+    awk -v key="$key" '
+        index($0, key "=") == 1 {
+            value=$0; sub(/^[^=]*=/, "", value); found=value
+        }
+        END {
+            gsub(/^"|"$/, "", found)
+            print found
+        }
+    ' "$ENV_FILE"
+}
+
+env_set() {
+    key=$1
+    value=$2
+    tmp="$ENV_FILE.tmp.$$"
+    awk -v key="$key" -v value="$value" '
+        BEGIN { done=0 }
+        index($0, key "=") == 1 {
+            if (!done) { print key "=" value; done=1 }
+            next
+        }
+        { print }
+        END { if (!done) print key "=" value }
+    ' "$ENV_FILE" > "$tmp"
+    mv "$tmp" "$ENV_FILE"
+}
+
+random_b64() {
+    if have openssl; then openssl rand -base64 32 | tr -d '\n'; return; fi
+    dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d '\n'
+}
+
+random_alnum() {
+    size=$1
+    LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$size"
+}
+
+ensure_env() {
+    created=false
+    if [ ! -f "$ENV_FILE" ]; then
+        cp "$ENV_EXAMPLE" "$ENV_FILE"
+        chmod 600 "$ENV_FILE" 2>/dev/null || true
+        created=true
+    fi
+
+    if [ -z "$(env_get APP_KEY)" ]; then env_set APP_KEY "base64:$(random_b64)"; fi
+    if [ -z "$(env_get DB_PASSWORD)" ]; then env_set DB_PASSWORD "$(random_alnum 40)"; fi
+    if [ -z "$(env_get ACADEMY_BOOTSTRAP_OWNER_EMAIL)" ]; then env_set ACADEMY_BOOTSTRAP_OWNER_EMAIL "owner@numacademy.local"; fi
+    if [ -z "$(env_get ACADEMY_BOOTSTRAP_OWNER_PASSWORD)" ]; then env_set ACADEMY_BOOTSTRAP_OWNER_PASSWORD "$(random_alnum 24)"; fi
+    if [ -z "$(env_get TOWER_ACADEMY_MCP_TOKEN)" ]; then env_set TOWER_ACADEMY_MCP_TOKEN "num_mcp_$(random_alnum 64)"; fi
+
+    port=$(env_get ACADEMY_PORT); [ -n "$port" ] || port=8080
+    env_set APP_URL "http://localhost:$port"
+    env_set ACADEMY_VERSION "1.6.0"
+
+    normalize_tower
+
+    if [ "$created" = true ]; then
+        say "Configuration locale créée: $ENV_FILE"
+        say "Compte initial: $(env_get ACADEMY_BOOTSTRAP_OWNER_EMAIL)"
+        say "Mot de passe initial: $(env_get ACADEMY_BOOTSTRAP_OWNER_PASSWORD)"
+        say "Conservez ce fichier localement; il est ignoré par Git."
+    fi
+}
+
+normalize_tower() {
+    tower=$(env_get ACADEMY_FEATURE_TOWER)
+    if [ "$tower" = "true" ]; then
+        env_set ACADEMY_FEATURE_MCP true
+        env_set TOWER_ENABLED true
+        env_set TOWER_ACADEMY_MCP_IN_PROCESS true
+    else
+        env_set TOWER_ENABLED false
+    fi
+}
+
+compose() {
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_PROD" -f "$COMPOSE_LOCAL" "$@"
+}
+
+check_docker() {
+    if ! have docker; then err "Docker n'est pas installé ou absent du PATH."; return 1; fi
+    if ! docker compose version >/dev/null 2>&1; then err "Docker Compose v2 (`docker compose`) est requis."; return 1; fi
+    if ! docker info >/dev/null 2>&1; then err "Docker est installé mais le daemon n'est pas accessible."; return 1; fi
+}
+
+wait_health() {
+    url="$(env_get APP_URL)/up"
+    if ! have curl; then
+        say "curl absent: démarrage lancé, vérifiez avec ./num-academy status"
+        return 0
+    fi
+    i=0
+    while [ "$i" -lt 90 ]; do
+        if curl -fsS "$url" >/dev/null 2>&1; then
+            say "READY — $url"
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 2
+    done
+    err "Le healthcheck n'a pas répondu. Consultez ./num-academy logs"
+    return 1
+}
+
+doctor() {
+    failures=0
+    say "NÜM Academy OS — Doctor"
+    say "Version: 1.6.0"
+    say "Dossier: $ROOT_DIR"
+
+    if check_docker; then say "Docker / Compose: OK"; else failures=$((failures + 1)); fi
+    ensure_env
+
+    app_key=$(env_get APP_KEY); db_password=$(env_get DB_PASSWORD)
+    [ -n "$app_key" ] && say "APP_KEY: OK" || { err "APP_KEY manquante"; failures=$((failures + 1)); }
+    [ -n "$db_password" ] && say "DB_PASSWORD: OK" || { err "DB_PASSWORD manquant"; failures=$((failures + 1)); }
+
+    feature_tower=$(env_get ACADEMY_FEATURE_TOWER)
+    runtime_tower=$(env_get TOWER_ENABLED)
+    feature_mcp=$(env_get ACADEMY_FEATURE_MCP)
+    tower_token=$(env_get TOWER_ACADEMY_MCP_TOKEN)
+    if [ "$feature_tower" = true ]; then
+        if [ "$runtime_tower" = true ] && [ "$feature_mcp" = true ] && [ -n "$tower_token" ]; then
+            say "Mission Tower + MCP: OK"
+        else
+            err "Mission Tower incohérente: feature=$feature_tower runtime=$runtime_tower mcp=$feature_mcp token=$([ -n "$tower_token" ] && echo present || echo absent)"
+            failures=$((failures + 1))
+        fi
+    else
+        say "Mission Tower: désactivée par profil"
+    fi
+
+    ai_provider=$(env_get ACADEMY_AI_PROVIDER)
+    if [ "$feature_tower" = true ] && { [ -z "$ai_provider" ] || [ "$ai_provider" = disabled ]; }; then
+        say "NOTE: Tower est lancée, mais Chat/Compiler nécessiteront un provider IA configuré."
+    fi
+
+    if [ "$failures" -eq 0 ]; then
+        if compose config >/dev/null 2>&1; then say "Docker Compose config: OK"; else err "Docker Compose config: invalide"; failures=$((failures + 1)); fi
+    fi
+
+    if [ "$failures" -eq 0 ]; then say "DOCTOR PASS"; return 0; fi
+    err "DOCTOR FAIL ($failures problème(s))"
+    return 1
+}
+
+cmd_up() {
+    check_docker
+    ensure_env
+    normalize_tower
+    say "Démarrage de NÜM Academy OS..."
+    compose up -d --build
+    wait_health
+    say "Academy: $(env_get APP_URL)"
+    if [ "$(env_get TOWER_ENABLED)" = true ]; then say "Mission Tower: $(env_get APP_URL)/tower"; fi
+}
+
+cmd_down() { check_docker; ensure_env; compose down; }
+cmd_restart() { check_docker; ensure_env; compose restart; wait_health; }
+cmd_status() { check_docker; ensure_env; compose ps; }
+cmd_logs() { check_docker; ensure_env; compose logs -f --tail=200 app postgres redis; }
+cmd_open() {
+    ensure_env
+    url=$(env_get APP_URL)
+    if have open; then open "$url"; elif have xdg-open; then xdg-open "$url" >/dev/null 2>&1; else say "$url"; fi
+}
+
+usage() {
+    cat <<'EOF'
+NÜM Academy OS — Runtime Launcher
+
+Usage:
+  ./num-academy up       Construire et lancer App + PostgreSQL + Redis
+  ./num-academy down     Arrêter la stack (volumes conservés)
+  ./num-academy restart  Redémarrer la stack
+  ./num-academy status   Afficher l'état des services
+  ./num-academy logs     Suivre les logs de la stack
+  ./num-academy doctor   Vérifier Docker, env, Tower/MCP et Compose
+  ./num-academy open     Ouvrir l'Academy dans le navigateur
+  ./num-academy help     Afficher cette aide
+EOF
+}
+
+interactive_menu() {
+    while :; do
+        cat <<'EOF'
+
+NÜM Academy OS
+──────────────────────────
+1) Lancer Academy
+2) Arrêter Academy
+3) Redémarrer
+4) Voir le statut
+5) Voir les logs
+6) Diagnostic
+7) Ouvrir dans le navigateur
+0) Quitter
+EOF
+        printf '> '
+        read choice || exit 0
+        case "$choice" in
+            1) cmd_up;; 2) cmd_down;; 3) cmd_restart;; 4) cmd_status;;
+            5) cmd_logs;; 6) doctor;; 7) cmd_open;; 0) exit 0;; *) say "Choix invalide.";;
+        esac
+    done
+}
+
+case "${1:-menu}" in
+    up) cmd_up ;;
+    down) cmd_down ;;
+    restart) cmd_restart ;;
+    status) cmd_status ;;
+    logs) cmd_logs ;;
+    doctor) doctor ;;
+    open) cmd_open ;;
+    help|-h|--help) usage ;;
+    menu) interactive_menu ;;
+    *) err "Commande inconnue: $1"; usage; exit 2 ;;
+esac

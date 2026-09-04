@@ -1,0 +1,52 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Environment (secrets must come from Coolify env vars, never baked into image)
+.env
+.env.*
+!.env.example
+
+# Dependencies (rebuilt inside Docker)
+/node_modules
+/vendor
+
+# Built assets (rebuilt inside Docker)
+/public/build
+/public/hot
+/bootstrap/ssr
+
+# Laravel runtime (generated at runtime, not needed in image)
+/storage/logs/*.log
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/bootstrap/cache/*.php
+
+# Databases
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+/database/*.sqlite
+
+# Tests (not needed in production)
+/tests
+phpunit.xml
+.phpunit.cache
+/coverage
+
+# Development tools
+/.npm-cache
+/.claude
+.phpunit.cache
+/.phpunit.cache
+/.idea
+/.vscode
+*.code-workspace
+.DS_Store
+Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

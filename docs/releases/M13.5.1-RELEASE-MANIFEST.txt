@@ -1,0 +1,9 @@
+NÜM Academy OS v1.1.6 — M13.5.1 Course + Release Hardening
+Cumulative M01→M13.5.1
+Baseline: v1.1.5 M13.5 Durable Memory
+Runtime: app + PostgreSQL 17/pgvector + Redis
+Hardening: Tower migration order + financial retention + media update cleanup + canonical publish lifecycle + AI/MCP/Tutor consistency
+CI: M07→M13.5.1 contracts + pgvector/Redis integration + migrate:fresh + SSR + TypeScript + Pest + production Docker build gate
+Packaged vendor/node_modules: no
+Fonts: no
+Real .env/secrets: no

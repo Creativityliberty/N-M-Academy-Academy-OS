@@ -1,0 +1,15 @@
+NÜM Academy OS 1.1.2 — M13.2 Academy Observatory
+
+Cumulative release includes M01 through M13.2.
+
+Mission Tower M13.2 adds:
+- Academy Observatory snapshots
+- deterministic insights/signals
+- insight lifecycle (open/mission_created/resolved)
+- mission creation from insight
+- students.risk.summary MCP read tool
+- ai.usage.summary MCP read tool (Tutor usage scope)
+- scheduled tower:observe collection
+- Observatory controls and thresholds
+
+Release excludes runtime dependency directories (`vendor`, `node_modules`, `.npm-cache`) and font binaries.
