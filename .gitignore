@@ -11,9 +11,10 @@
 /storage/framework/cache/*
 /storage/framework/sessions/*
 /storage/framework/views/*
-/resources/js/actions
-/resources/js/routes
-/resources/js/wayfinder
+# Wayfinder generated files are committed so Docker builds don't need PHP artisan at build time
+# /resources/js/actions
+# /resources/js/routes
+# /resources/js/wayfinder
 /vendor
 .DS_Store
 .env

@@ -48,8 +48,9 @@ export default defineConfig(({ command }) => ({
 
         tailwindcss(),
 
-        wayfinder({
-            formVariants: true,
-        }),
+        // Wayfinder only runs in dev (vite serve) — generated files are committed to git.
+        // During `vite build` (Docker / CI) the plugin is skipped to avoid calling `php artisan`
+        // when there is no running database or .env file available.
+        ...(command === 'serve' ? [wayfinder({ formVariants: true })] : []),
     ],
 }));
