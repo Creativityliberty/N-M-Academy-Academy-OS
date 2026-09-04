@@ -1,4 +1,10 @@
 # =============================================================================
+# Stage 0 — Canonical Node.js runtime
+# =============================================================================
+# Keep Docker aligned with GitHub Actions and packages that require Node >=24.
+FROM node:24-alpine AS node-runtime
+
+# =============================================================================
 # Stage 1 — PHP + Composer dependencies
 # =============================================================================
 FROM php:8.4-cli-alpine AS composer-deps
@@ -38,11 +44,16 @@ RUN php artisan package:discover --ansi 2>/dev/null || true
 # Wayfinder runs `php artisan wayfinder:generate` during the Vite build.
 FROM composer-deps AS node-build
 
-RUN apk add --no-cache nodejs npm
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/bin/npm /usr/local/bin/npm
+COPY --from=node-runtime /usr/local/bin/npx /usr/local/bin/npx
+COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 
-RUN npm ci --prefer-offline
+RUN node --version \
+    && npm --version \
+    && npm ci --prefer-offline
 
 # Builds both client bundle (public/build) and SSR bundle (bootstrap/ssr)
 RUN npm run build:ssr
@@ -77,8 +88,8 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/*
 
-# Node.js needed at runtime by `php artisan inertia:start-ssr`
-RUN apk add --no-cache nodejs npm
+# Inertia SSR requires Node at runtime; keep the same Node 24 binary used for build.
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 
 # PHP configuration
 COPY docker/php/php.ini        "$PHP_INI_DIR/conf.d/99-app.ini"
