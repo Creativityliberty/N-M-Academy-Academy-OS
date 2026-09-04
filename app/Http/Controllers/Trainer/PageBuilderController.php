@@ -91,6 +91,8 @@ class PageBuilderController extends Controller
         $courses = $trainer->courses()->with(['offers' => fn ($q) => $q->where('is_active', true)])->orderBy('title')->get()->map(fn ($course) => [
             'id' => $course->id,
             'title' => $course->title,
+            'image' => $course->image,
+            'thumbnail' => $course->thumbnail,
             'offers' => $course->offers->map(fn (CourseOffer $offer) => [
                 'id' => $offer->id, 'name' => $offer->name, 'billing_type' => $offer->billing_type, 'amount' => $offer->amount, 'currency' => $offer->currency,
             ])->values(),

@@ -7,6 +7,9 @@ import {
     Save,
     Send,
     Trash2,
+    Sparkles,
+    Loader2,
+    Image as ImageIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { PageRenderer } from '@/components/page-builder/page-renderer';
@@ -19,6 +22,8 @@ type Block = { type: string; label: string; variants: string[] };
 type Course = {
     id: number;
     title: string;
+    image?: string | null;
+    thumbnail?: string | null;
     offers: Array<{
         id: number;
         name: string;
@@ -124,6 +129,36 @@ export default function PageEdit() {
     const [draftSettings, setDraftSettings] = useState<Record<string, any>>(
         selected?.settings ?? {},
     );
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+    const linkedCourse = useMemo(() => {
+        const courseId = Number(
+            draftSettings.course_id || selected?.data?.course?.id,
+        );
+        return courses.find((c) => c.id === courseId) ?? null;
+    }, [courses, draftSettings.course_id, selected]);
+
+    const handleGenerateBanner = () => {
+        if (!linkedCourse) return;
+        const promptToSend =
+            aiPrompt.trim() ||
+            `Bannière cinématique 16:9 haute résolution pour la formation "${linkedCourse.title}". Ambiance moderne, élégante et percutante.`;
+        setIsGeneratingImage(true);
+        router.post(
+            `/trainer/courses/${linkedCourse.id}/generate-image`,
+            {
+                purpose: 'cover',
+                prompt: promptToSend,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsGeneratingImage(false);
+                },
+            },
+        );
+    };
     const selectSection = (s: Section) => {
         setSelectedId(s.id);
         setDraftSettings(s.settings ?? {});
@@ -362,6 +397,75 @@ export default function PageEdit() {
                                                 </option>
                                             ))}
                                         </select>
+                                        {['hero', 'course'].includes(selected.type) && linkedCourse && (
+                                            <div className="mt-3 space-y-3 rounded-xl border bg-muted/30 p-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-semibold text-foreground">
+                                                        Bannière 16:9 du cours
+                                                    </span>
+                                                    {linkedCourse.image ? (
+                                                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                                                            Active
+                                                        </span>
+                                                    ) : (
+                                                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600">
+                                                            Non générée
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {linkedCourse.image ? (
+                                                    <div className="aspect-video overflow-hidden rounded-lg border bg-black/40">
+                                                        <img
+                                                            src={linkedCourse.image}
+                                                            alt={linkedCourse.title}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex aspect-video flex-col items-center justify-center rounded-lg border border-dashed bg-background p-3 text-center text-xs text-muted-foreground">
+                                                        <ImageIcon className="mb-1 size-6 text-muted-foreground/40" />
+                                                        Aucune bannière 16:9 enregistrée.
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-2 border-t pt-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-xs font-medium text-muted-foreground">
+                                                            Prompt IA
+                                                        </label>
+                                                        <Sparkles className="size-3 text-primary" />
+                                                    </div>
+                                                    <Textarea
+                                                        rows={2}
+                                                        placeholder={`Bannière cinématique pour "${linkedCourse.title}"...`}
+                                                        value={aiPrompt}
+                                                        onChange={(e) => setAiPrompt(e.target.value)}
+                                                        className="text-xs"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        disabled={isGeneratingImage}
+                                                        onClick={handleGenerateBanner}
+                                                        className="w-full border-primary/30 text-xs font-medium hover:bg-primary/5 hover:text-primary"
+                                                    >
+                                                        {isGeneratingImage ? (
+                                                            <>
+                                                                <Loader2 className="mr-2 size-3.5 animate-spin" />
+                                                                Génération IA en cours...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Sparkles className="mr-2 size-3.5 text-primary" />
+                                                                Générer la bannière 16:9 avec l'IA
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 {[
