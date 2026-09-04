@@ -80,12 +80,27 @@ if (str_contains($renderer, 'navigator.clipboard.writeText')) {
     $fail('Page renderer still bypasses the shared clipboard hook');
 }
 
+foreach ([
+    'storage/framework/cache/.gitignore',
+    'storage/framework/cache/data/.gitignore',
+    'storage/framework/sessions/.gitignore',
+    'storage/framework/views/.gitignore',
+    'storage/logs/.gitignore',
+] as $path) {
+    $read($path);
+}
+
 $dockerfile = $read('Dockerfile');
 if (! str_contains($dockerfile, 'FROM node:24-alpine AS node-runtime')) {
     $fail('Docker production path must use the Node 24 baseline');
 }
 if (str_contains($dockerfile, 'apk add --no-cache nodejs npm')) {
     $fail('Dockerfile must not fall back to Alpine Node 22/npm 10');
+}
+$runtimeDirectories = strpos($dockerfile, 'storage/framework/views');
+$assetBuild = strpos($dockerfile, 'RUN npm run build:ssr');
+if ($runtimeDirectories === false || $assetBuild === false || $runtimeDirectories > $assetBuild) {
+    $fail('Docker must create Laravel runtime cache directories before Wayfinder/Vite build');
 }
 
 $workflow = $read('.github/workflows/tests.yml');
