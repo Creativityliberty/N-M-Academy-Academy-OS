@@ -9,15 +9,10 @@ FROM node:24-alpine AS node-runtime
 # =============================================================================
 FROM php:8.4-cli-alpine AS composer-deps
 
-RUN apk add --no-cache \
-        git curl zip unzip libstdc++ \
-        libpng-dev libjpeg-turbo-dev freetype-dev \
-        icu-dev libzip-dev oniguruma-dev postgresql-dev $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        bcmath exif gd intl mbstring pcntl pdo pdo_mysql pdo_pgsql zip \
-    && pecl install redis \
-    && docker-php-ext-enable redis
+COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
+
+RUN apk add --no-cache git curl zip unzip libstdc++ \
+    && install-php-extensions bcmath exif gd intl mbstring pcntl pdo pdo_mysql pdo_pgsql zip redis
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -53,7 +48,16 @@ ENV NODE_OPTIONS="--max-old-space-size=1536"
 
 RUN node --version \
     && npm --version \
-    && npm ci --prefer-offline
+    && npm ci --include=dev --prefer-offline
+
+# Wayfinder boots Laravel during the Vite build. Use a throwaway sqlite env only
+# in this build stage; production runtime secrets remain external to the image.
+RUN echo "APP_KEY=base64:g0YUU+MCrOxxpOl9DvjDHGP4A/XwmY5Hiwzjf7p/lFk=" > .env \
+    && echo "APP_ENV=local" >> .env \
+    && echo "APP_URL=http://localhost" >> .env \
+    && echo "DB_CONNECTION=sqlite" >> .env \
+    && echo "DB_DATABASE=/tmp/build_wayfinder.sqlite" >> .env \
+    && touch /tmp/build_wayfinder.sqlite
 
 # Builds both client bundle (public/build) and SSR bundle (bootstrap/ssr)
 RUN npm run build:ssr
@@ -72,21 +76,11 @@ RUN apk add --no-cache \
         curl \
         poppler-utils \
         libstdc++ \
-        libpng libjpeg-turbo freetype \
-        icu-libs libzip oniguruma libpq \
     && rm -rf /var/cache/apk/*
 
-# PHP extensions (build deps removed after install to keep image lean)
-RUN apk add --no-cache --virtual .build-deps \
-        libpng-dev libjpeg-turbo-dev freetype-dev \
-        icu-dev libzip-dev oniguruma-dev postgresql-dev $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        bcmath exif gd intl mbstring pcntl pdo pdo_mysql pdo_pgsql opcache zip \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del .build-deps \
-    && rm -rf /var/cache/apk/*
+COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
+
+RUN install-php-extensions bcmath exif gd intl mbstring pcntl pdo pdo_mysql pdo_pgsql opcache zip redis
 
 # Inertia SSR requires Node at runtime; keep the same Node 24 binary used for build.
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
