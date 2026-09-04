@@ -1,7 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
+    ArrowRight,
     BookOpen,
+    ChevronRight,
     ClipboardCheck,
     CheckCircle2,
     Circle,
@@ -495,22 +497,76 @@ export default function OneBriefCourseCreation({
                             </div>
 
                             {recentRuns.length > 0 && (
-                                <div className="academy-panel rounded-[calc(var(--radius)*1.1)] p-5">
-                                    <h3 className="font-semibold">Générations récentes</h3>
-                                    <div className="mt-3 space-y-2">
-                                        {recentRuns.map((item) => (
-                                            <Link
-                                                key={item.id}
-                                                href={item.url}
-                                                className="block rounded-xl border border-border/50 p-3 transition-colors hover:bg-muted/50"
-                                            >
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <p className="line-clamp-1 text-sm font-medium">{item.brief}</p>
-                                                    <Badge variant="outline">{item.progressPercent}%</Badge>
-                                                </div>
-                                                <p className="mt-1 text-xs capitalize text-muted-foreground">{item.status}</p>
-                                            </Link>
-                                        ))}
+                                <div className="academy-panel rounded-[calc(var(--radius)*1.1)] p-5 space-y-3.5">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold text-foreground">Générations récentes</h3>
+                                        <span className="text-[11px] text-muted-foreground font-mono font-medium">
+                                            {recentRuns.length} brief{recentRuns.length > 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-2.5">
+                                        {recentRuns.map((item) => {
+                                            const isCompleted = item.status === 'completed';
+                                            const isRunning = item.status === 'running';
+                                            const isFailed = item.status === 'failed';
+
+                                            return (
+                                                <Link
+                                                    key={item.id}
+                                                    href={item.url}
+                                                    className="group relative block rounded-xl border border-border/60 bg-background/50 p-3.5 transition-all duration-200 hover:border-brand-primary/40 hover:bg-brand-primary-soft/10 hover:shadow-xs"
+                                                >
+                                                    <div className="flex items-start justify-between gap-2.5">
+                                                        <div className="min-w-0 flex-1 space-y-1.5">
+                                                            <p className="line-clamp-2 text-xs font-semibold leading-snug text-foreground group-hover:text-brand-primary transition-colors">
+                                                                {item.brief}
+                                                            </p>
+                                                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                                                <span className="flex items-center gap-1.5">
+                                                                    {isRunning && (
+                                                                        <span className="relative flex size-2">
+                                                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                                                                            <span className="relative inline-flex size-2 rounded-full bg-amber-500" />
+                                                                        </span>
+                                                                    )}
+                                                                    {isCompleted && (
+                                                                        <CheckCircle2 className="size-3 text-emerald-600" />
+                                                                    )}
+                                                                    {isFailed && (
+                                                                        <CircleAlert className="size-3 text-destructive" />
+                                                                    )}
+                                                                    <span className="capitalize font-medium">
+                                                                        {isRunning ? 'En cours' : isCompleted ? 'Terminé' : isFailed ? 'Échoué' : item.status}
+                                                                    </span>
+                                                                </span>
+                                                                <span>•</span>
+                                                                <span className="font-mono">{item.progressPercent}%</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Action Button Badge */}
+                                                        <div className="shrink-0 flex items-center gap-1 rounded-lg border border-border/70 bg-card/80 px-2.5 py-1 text-[11px] font-medium text-foreground transition-all group-hover:border-brand-primary/50 group-hover:bg-brand-primary group-hover:text-brand-primary-foreground group-hover:shadow-xs">
+                                                            {isRunning ? (
+                                                                <>
+                                                                    <span>Suivre</span>
+                                                                    <ArrowRight className="size-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                                                </>
+                                                            ) : isCompleted ? (
+                                                                <>
+                                                                    <span>Voir</span>
+                                                                    <ChevronRight className="size-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span>Reprendre</span>
+                                                                    <RotateCcw className="size-3" />
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
