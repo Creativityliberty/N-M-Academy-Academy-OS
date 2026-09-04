@@ -39,6 +39,16 @@ ENV NODE_OPTIONS="--max-old-space-size=1536"
 
 RUN npm ci --include=dev --prefer-offline
 
+# Wayfinder runs `php artisan wayfinder:generate` during Vite build.
+# Laravel needs a bootable .env — create a throwaway one (sqlite, no real DB).
+# This file stays in this layer only; Stage 3 copies from build context where .dockerignore excludes .env.
+RUN echo "APP_KEY=base64:g0YUU+MCrOxxpOl9DvjDHGP4A/XwmY5Hiwzjf7p/lFk=" > .env \
+    && echo "APP_ENV=local" >> .env \
+    && echo "APP_URL=http://localhost" >> .env \
+    && echo "DB_CONNECTION=sqlite" >> .env \
+    && echo "DB_DATABASE=/tmp/build_wayfinder.sqlite" >> .env \
+    && touch /tmp/build_wayfinder.sqlite
+
 # Builds both client bundle (public/build) and SSR bundle (bootstrap/ssr)
 RUN npm run build:ssr
 
