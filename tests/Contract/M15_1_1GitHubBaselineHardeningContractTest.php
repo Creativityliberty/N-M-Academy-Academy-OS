@@ -35,6 +35,9 @@ $package = json_decode($read('package.json'), true, flags: JSON_THROW_ON_ERROR);
 if (($package['version'] ?? null) !== $version) {
     $fail("package.json version must be {$version}");
 }
+if (($package['engines']['node'] ?? null) !== '>=24.0.0') {
+    $fail('package.json must declare Node >=24.0.0');
+}
 
 $config = $read('config/academy.php');
 if (! str_contains($config, "env('ACADEMY_VERSION', '{$version}')")) {
@@ -73,8 +76,32 @@ $renderer = $read('resources/js/components/page-builder/page-renderer.tsx');
 if (! str_contains($renderer, "import { useClipboard } from '@/hooks/use-clipboard';")) {
     $fail('Page renderer must reuse the shared clipboard hook');
 }
-if (str_contains($renderer, 'navigator.clipboard.writeText(url)')) {
+if (str_contains($renderer, 'navigator.clipboard.writeText')) {
     $fail('Page renderer still bypasses the shared clipboard hook');
+}
+
+$dockerfile = $read('Dockerfile');
+if (! str_contains($dockerfile, 'FROM node:24-alpine AS node-runtime')) {
+    $fail('Docker production path must use the Node 24 baseline');
+}
+if (str_contains($dockerfile, 'apk add --no-cache nodejs npm')) {
+    $fail('Dockerfile must not fall back to Alpine Node 22/npm 10');
+}
+
+$workflow = $read('.github/workflows/tests.yml');
+if (! str_contains($workflow, 'tests/Contract')) {
+    $fail('CI must use the case-sensitive tests/Contract path');
+}
+if (str_contains($workflow, 'tests/contracts')) {
+    $fail('CI still contains the invalid tests/contracts Linux path');
+}
+
+$composer = json_decode($read('composer.json'), true, flags: JSON_THROW_ON_ERROR);
+if (($composer['require']['php'] ?? null) !== '^8.4') {
+    $fail('composer.json must keep PHP ^8.4 aligned with the locked Symfony baseline');
+}
+if (($package['dependencies']['thinking-orbs'] ?? null) !== '^0.3.1') {
+    $fail('thinking-orbs must remain on ^0.3.1');
 }
 
 fwrite(STDOUT, "M15.1.1 GitHub baseline hardening contract PASS\n");
