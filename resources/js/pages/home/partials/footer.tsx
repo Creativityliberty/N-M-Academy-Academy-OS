@@ -69,7 +69,7 @@ export function Footer() {
     return (
         <footer
             aria-labelledby="footer-heading"
-            className="relative w-full border-t border-border bg-card/90 backdrop-blur-xl z-20"
+            className="relative z-20 w-full border-t border-border bg-card/90 backdrop-blur-xl"
         >
             <h2 id="footer-heading" className="sr-only">
                 Site footer
@@ -181,7 +181,7 @@ export function Footer() {
                             © 2026 {academy?.name || 'NÜM Academy'}. Tous droits réservés.
                         </span>
                         <Badge variant="outline" className="text-xs">
-                            {academy?.version || 'v1.6.0'}
+                            {academy?.version || 'v1.6.1'}
                         </Badge>
                     </div>
 
