@@ -10,7 +10,7 @@ FROM node:24-alpine AS node-runtime
 FROM php:8.4-cli-alpine AS composer-deps
 
 RUN apk add --no-cache \
-        git curl zip unzip \
+        git curl zip unzip libstdc++ \
         libpng-dev libjpeg-turbo-dev freetype-dev \
         icu-dev libzip-dev oniguruma-dev postgresql-dev $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
