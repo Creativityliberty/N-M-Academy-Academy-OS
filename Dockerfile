@@ -44,7 +44,9 @@ COPY --from=node-runtime /usr/local/bin/npm /usr/local/bin/npm
 COPY --from=node-runtime /usr/local/bin/npx /usr/local/bin/npx
 COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 
-ENV NODE_OPTIONS="--max-old-space-size=1536"
+# The production Vite + SSR graph needs more than Node's small-container default.
+# Keep the allowance scoped to the build stage; runtime SSR does not inherit it.
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 RUN node --version \
     && npm --version \
