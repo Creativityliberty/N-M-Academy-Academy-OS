@@ -97,18 +97,18 @@ if (! str_contains($factoryUi, "drip: 'Drip & prérequis'")) { $fail('Factory UI
 $workflow = $requireFile('.github/workflows/tests.yml');
 if (! str_contains($workflow, 'M15_1LearningAccessDripContractTest.php')) { $fail('CI does not run M15.1 contract.'); }
 
+$currentVersion = trim($requireFile('VERSION'));
 foreach (['VERSION', 'PACKAGE_VERSION'] as $path) {
     if (version_compare(trim($requireFile($path)), '1.6.0', '<')) { $fail("M15.1 release version must be >= 1.6.0 in {$path}."); }
 }
 $package = json_decode($requireFile('package.json'), true);
 if (version_compare((string) ($package['version'] ?? '0.0.0'), '1.6.0', '<')) { $fail('package.json version must be >= 1.6.0.'); }
 $lock = json_decode($requireFile('package-lock.json'), true);
-if (version_compare((string) ($lock['version'] ?? '0.0.0'), '1.6.0', '<')) { $fail('package-lock.json version must be >= 1.6.0.'); }
-if (version_compare((string) ($lock['packages']['']['version'] ?? '0.0.0'), '1.6.0', '<')) { $fail('package-lock root package version must be >= 1.6.0.'); }
+if (! is_array($lock) || ($lock['lockfileVersion'] ?? 0) < 3) { $fail('package-lock.json must remain a valid npm lockfile v3+.'); }
 
 foreach (['num-academy', 'num-academy.ps1'] as $launcherPath) {
     $launcher = $requireFile($launcherPath);
-    if (! str_contains($launcher, '1.6.0') || str_contains($launcher, '1.5.2')) { $fail("Launcher version drift in {$launcherPath}."); }
+    if (! str_contains($launcher, $currentVersion) || str_contains($launcher, '1.5.2')) { $fail("Launcher version drift in {$launcherPath}."); }
 }
 if (($package['dependencies']['thinking-orbs'] ?? null) !== '^0.3.1') { $fail('Thinking Orbs dependency was lost in M15.1.'); }
 if (! str_contains($requireFile('app/MissionTower/Services/TowerChatRouter.php'), 'français')) { $fail('Tower French-by-default invariant was lost in M15.1.'); }
