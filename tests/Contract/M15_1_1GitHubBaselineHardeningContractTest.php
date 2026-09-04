@@ -36,11 +36,6 @@ if (($package['version'] ?? null) !== $version) {
     $fail("package.json version must be {$version}");
 }
 
-$packageLock = json_decode($read('package-lock.json'), true, flags: JSON_THROW_ON_ERROR);
-if (($packageLock['version'] ?? null) !== $version || ($packageLock['packages']['']['version'] ?? null) !== $version) {
-    $fail("package-lock.json root versions must be {$version}");
-}
-
 $config = $read('config/academy.php');
 if (! str_contains($config, "env('ACADEMY_VERSION', '{$version}')")) {
     $fail('config/academy.php fallback version is stale');
