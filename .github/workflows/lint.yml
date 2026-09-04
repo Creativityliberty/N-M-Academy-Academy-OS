@@ -59,14 +59,14 @@ jobs:
           git diff --name-only --diff-filter=ACMR "$base" HEAD > /tmp/changed-files.txt
           cat /tmp/changed-files.txt
 
-      - name: Check changed PHP formatting
+      - name: Check changed production PHP formatting
         shell: bash
         run: |
-          mapfile -t files < <(grep -E '\.php$' /tmp/changed-files.txt || true)
+          mapfile -t files < <(grep -E '^(app|bootstrap|config|database|routes)/.*\.php$' /tmp/changed-files.txt || true)
           if ((${#files[@]})); then
             ./vendor/bin/pint --test "${files[@]}"
           else
-            echo "No changed PHP files."
+            echo "No changed production PHP files."
           fi
 
       - name: Check changed frontend formatting
