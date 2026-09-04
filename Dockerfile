@@ -50,6 +50,15 @@ RUN node --version \
     && npm --version \
     && npm ci --include=dev --prefer-offline
 
+# Wayfinder boots Laravel during the Vite build. These gitignored runtime/cache
+# directories must exist before Laravel is booted by `npm run build:ssr`.
+RUN mkdir -p \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache
+
 # Wayfinder boots Laravel during the Vite build. Use a throwaway sqlite env only
 # in this build stage; production runtime secrets remain external to the image.
 RUN echo "APP_KEY=base64:g0YUU+MCrOxxpOl9DvjDHGP4A/XwmY5Hiwzjf7p/lFk=" > .env \
