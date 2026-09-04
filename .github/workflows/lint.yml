@@ -15,7 +15,7 @@ on:
       - workos
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quality:
@@ -24,28 +24,67 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.4'
+          tools: composer:v2
 
-      - name: Install Dependencies
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
         run: |
-          composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-          npm install
+          composer install --no-ansi --no-interaction --no-progress --prefer-dist
+          npm ci
 
-      - name: Run Pint
-        run: composer lint
+      - name: Resolve changed files
+        id: changed
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="$(git rev-parse HEAD^)"
+            fi
+          fi
 
-      - name: Format Frontend
-        run: npm run format
+          git diff --name-only --diff-filter=ACMR "$base" HEAD > /tmp/changed-files.txt
+          cat /tmp/changed-files.txt
 
-      - name: Lint Frontend
-        run: npm run lint
+      - name: Check changed PHP formatting
+        shell: bash
+        run: |
+          mapfile -t files < <(grep -E '\.php$' /tmp/changed-files.txt || true)
+          if ((${#files[@]})); then
+            ./vendor/bin/pint --test "${files[@]}"
+          else
+            echo "No changed PHP files."
+          fi
 
-      # - name: Commit Changes
-      #   uses: stefanzweifel/git-auto-commit-action@v7
-      #   with:
-      #     commit_message: fix code style
-      #     commit_options: '--no-verify'
+      - name: Check changed frontend formatting
+        shell: bash
+        run: |
+          mapfile -t files < <(grep -E '^resources/.*\.(js|jsx|ts|tsx|css)$' /tmp/changed-files.txt || true)
+          if ((${#files[@]})); then
+            npx prettier --check "${files[@]}"
+          else
+            echo "No changed frontend files."
+          fi
+
+      - name: Lint changed frontend files
+        shell: bash
+        run: |
+          mapfile -t files < <(grep -E '^resources/.*\.(js|jsx|ts|tsx)$' /tmp/changed-files.txt || true)
+          if ((${#files[@]})); then
+            npx eslint "${files[@]}"
+          else
+            echo "No changed frontend source files."
+          fi
