@@ -1,11 +1,17 @@
 # =============================================================================
+# Stage 0 — Canonical Node.js runtime
+# =============================================================================
+# Keep Docker aligned with GitHub Actions and packages that require Node >=24.
+FROM node:24-alpine AS node-runtime
+
+# =============================================================================
 # Stage 1 — PHP + Composer dependencies
 # =============================================================================
 FROM php:8.4-cli-alpine AS composer-deps
 
 COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
 
-RUN apk add --no-cache git curl zip unzip \
+RUN apk add --no-cache git curl zip unzip libstdc++ \
     && install-php-extensions bcmath exif gd intl mbstring pcntl pdo pdo_mysql pdo_pgsql zip redis
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -33,15 +39,30 @@ RUN php artisan package:discover --ansi 2>/dev/null || true
 # Wayfinder runs `php artisan wayfinder:generate` during the Vite build.
 FROM composer-deps AS node-build
 
-RUN apk add --no-cache nodejs npm
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/bin/npm /usr/local/bin/npm
+COPY --from=node-runtime /usr/local/bin/npx /usr/local/bin/npx
+COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 
-ENV NODE_OPTIONS="--max-old-space-size=1536"
+# The production Vite + SSR graph needs more than Node's small-container default.
+# Keep the allowance scoped to the build stage; runtime SSR does not inherit it.
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
-RUN npm ci --include=dev --prefer-offline
+RUN node --version \
+    && npm --version \
+    && npm ci --include=dev --prefer-offline
 
-# Wayfinder runs `php artisan wayfinder:generate` during Vite build.
-# Laravel needs a bootable .env — create a throwaway one (sqlite, no real DB).
-# This file stays in this layer only; Stage 3 copies from build context where .dockerignore excludes .env.
+# Wayfinder boots Laravel during the Vite build. These gitignored runtime/cache
+# directories must exist before Laravel is booted by `npm run build:ssr`.
+RUN mkdir -p \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache
+
+# Wayfinder boots Laravel during the Vite build. Use a throwaway sqlite env only
+# in this build stage; production runtime secrets remain external to the image.
 RUN echo "APP_KEY=base64:g0YUU+MCrOxxpOl9DvjDHGP4A/XwmY5Hiwzjf7p/lFk=" > .env \
     && echo "APP_ENV=local" >> .env \
     && echo "APP_URL=http://localhost" >> .env \
@@ -72,8 +93,8 @@ COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensio
 
 RUN install-php-extensions bcmath exif gd intl mbstring pcntl pdo pdo_mysql pdo_pgsql opcache zip redis
 
-# Node.js needed at runtime by `php artisan inertia:start-ssr`
-RUN apk add --no-cache nodejs npm
+# Inertia SSR requires Node at runtime; keep the same Node 24 binary used for build.
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 
 # PHP configuration
 COPY docker/php/php.ini        "$PHP_INI_DIR/conf.d/99-app.ini"

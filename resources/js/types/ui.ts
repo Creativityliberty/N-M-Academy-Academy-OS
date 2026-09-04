@@ -26,6 +26,7 @@ export type AcademyFeatures = {
 
 export type AcademyBrand = {
     name: string;
+    version: string;
     shortName: string;
     descriptor: string;
     logoUrl: string | null;

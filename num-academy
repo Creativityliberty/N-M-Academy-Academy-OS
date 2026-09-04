@@ -11,9 +11,10 @@ say() { printf '%s\n' "$*"; }
 err() { printf 'ERREUR: %s\n' "$*" >&2; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
-env_get() {
-    key=$1
-    [ -f "$ENV_FILE" ] || return 0
+env_get_from_file() {
+    file=$1
+    key=$2
+    [ -f "$file" ] || return 0
     awk -v key="$key" '
         index($0, key "=") == 1 {
             value=$0; sub(/^[^=]*=/, "", value); found=value
@@ -22,8 +23,15 @@ env_get() {
             gsub(/^"|"$/, "", found)
             print found
         }
-    ' "$ENV_FILE"
+    ' "$file"
 }
+
+env_get() {
+    env_get_from_file "$ENV_FILE" "$1"
+}
+
+DEFAULT_ACADEMY_VERSION=$(env_get_from_file "$ENV_EXAMPLE" ACADEMY_VERSION)
+[ -n "$DEFAULT_ACADEMY_VERSION" ] || DEFAULT_ACADEMY_VERSION="1.6.1"
 
 env_set() {
     key=$1
@@ -67,7 +75,7 @@ ensure_env() {
 
     port=$(env_get ACADEMY_PORT); [ -n "$port" ] || port=8080
     env_set APP_URL "http://localhost:$port"
-    env_set ACADEMY_VERSION "1.6.0"
+    env_set ACADEMY_VERSION "$DEFAULT_ACADEMY_VERSION"
 
     normalize_tower
 
@@ -122,7 +130,7 @@ wait_health() {
 doctor() {
     failures=0
     say "NÜM Academy OS — Doctor"
-    say "Version: 1.6.0"
+    say "Version: $DEFAULT_ACADEMY_VERSION"
     say "Dossier: $ROOT_DIR"
 
     if check_docker; then say "Docker / Compose: OK"; else failures=$((failures + 1)); fi

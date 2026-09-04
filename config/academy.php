@@ -2,7 +2,7 @@
 
 return [
     'name' => env('ACADEMY_NAME', env('APP_NAME', 'NÜM Academy')),
-    'version' => env('ACADEMY_VERSION', '1.6.0'),
+    'version' => env('ACADEMY_VERSION', '1.6.1'),
     'short_name' => env('ACADEMY_SHORT_NAME', 'NÜM'),
     'descriptor' => env('ACADEMY_DESCRIPTOR', 'Academy OS'),
     'logo_url' => env('ACADEMY_LOGO_URL'),
@@ -40,7 +40,6 @@ return [
         'certificates' => filter_var(env('ACADEMY_FEATURE_CERTIFICATES', true), FILTER_VALIDATE_BOOL),
         'drip' => filter_var(env('ACADEMY_FEATURE_DRIP', true), FILTER_VALIDATE_BOOL),
     ],
-
 
     'learning' => [
         'completion' => [

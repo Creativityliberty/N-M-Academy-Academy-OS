@@ -2,11 +2,16 @@ import { usePage } from '@inertiajs/react';
 import { Sparkles } from 'lucide-react';
 
 type DashboardHeroProps = {
+    eyebrow?: string;
     title: string;
     description: string;
 };
 
-export function DashboardHero({ title, description }: DashboardHeroProps) {
+export function DashboardHero({
+    eyebrow,
+    title,
+    description,
+}: DashboardHeroProps) {
     const props = usePage().props as any;
     const firstName = props.auth?.user?.name?.trim().split(/\s+/)[0];
 
@@ -22,6 +27,11 @@ export function DashboardHero({ title, description }: DashboardHeroProps) {
             />
 
             <div className="relative max-w-2xl">
+                {eyebrow ? (
+                    <p className="mb-3 text-xs font-semibold tracking-[0.18em] text-brand-primary uppercase">
+                        {eyebrow}
+                    </p>
+                ) : null}
                 <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-brand-primary-soft text-brand-primary">
                     <Sparkles className="size-4.5" aria-hidden="true" />
                 </div>

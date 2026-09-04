@@ -84,8 +84,11 @@ $lock = $read('package-lock.json');
 if (! str_contains($lock, 'node_modules/thinking-orbs')) { $fail('thinking-orbs lockfile entry missing.'); }
 
 $orb = $read('resources/js/components/ai/thinking-orb-visual.tsx');
-foreach (["from 'thinking-orbs'", 'ThinkingOrb', 'size={size}', 'theme="auto"'] as $needle) {
+foreach (["from 'thinking-orbs'", 'ThinkingOrb', 'theme="auto"'] as $needle) {
     if (! str_contains($orb, $needle)) { $fail("thinking-orbs adapter invariant missing: {$needle}"); }
+}
+if (! str_contains($orb, 'size={size}') && ! str_contains($orb, 'size={validSize}')) {
+    $fail('thinking-orbs adapter must pass a bounded or direct size prop.');
 }
 $courseOrb = $read('resources/js/components/academy-ai/thinking-orb.tsx');
 if (! str_contains($courseOrb, 'ThinkingOrbVisual')) { $fail('One-Brief does not use thinking-orbs adapter.'); }

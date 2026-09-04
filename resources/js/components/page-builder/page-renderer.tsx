@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import {
     Check,
@@ -14,6 +13,7 @@ import {
     Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useClipboard } from '@/hooks/use-clipboard';
 
 type Section = {
     id: number;
@@ -33,13 +33,11 @@ const money = (amount: number, currency = 'EUR') =>
 
 /* ──── Share Buttons (reusable) ──── */
 function ShareButtons({ title }: { title: string }) {
-    const [copied, setCopied] = useState(false);
+    const { isCopied, copy } = useClipboard();
     const url = typeof window !== 'undefined' ? window.location.href : '';
 
-    const copyLink = async () => {
-        await navigator.clipboard.writeText(url).catch(() => {});
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const copyLink = () => {
+        copy(url);
     };
 
     return (
@@ -65,12 +63,12 @@ function ShareButtons({ title }: { title: string }) {
                 onClick={copyLink}
                 className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-background/60 px-4 py-2 text-xs font-medium text-foreground/70 transition-colors hover:border-border/70 hover:text-foreground"
             >
-                {copied ? (
+                {isCopied ? (
                     <Check className="h-4 w-4 text-emerald-500" />
                 ) : (
                     <Copy className="h-4 w-4" />
                 )}
-                {copied ? 'Copié !' : 'Copier le lien'}
+                {isCopied ? 'Copié !' : 'Copier le lien'}
             </button>
         </div>
     );
