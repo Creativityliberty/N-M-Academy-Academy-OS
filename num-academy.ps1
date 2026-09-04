@@ -11,11 +11,20 @@ $EnvExample = Join-Path $Root '.env.num-academy.example'
 $ComposeProd = Join-Path $Root 'docker-compose.coolify.yml'
 $ComposeLocal = Join-Path $Root 'docker-compose.local.yml'
 
-function Get-EnvValue([string]$Key) {
-    if (-not (Test-Path $EnvFile)) { return '' }
-    $line = Get-Content $EnvFile | Where-Object { $_ -like "$Key=*" } | Select-Object -Last 1
+function Get-EnvValueFromPath([string]$Path, [string]$Key) {
+    if (-not (Test-Path $Path)) { return '' }
+    $line = Get-Content $Path | Where-Object { $_ -like "$Key=*" } | Select-Object -Last 1
     if (-not $line) { return '' }
     return (($line -split '=', 2)[1]).Trim('"')
+}
+
+function Get-EnvValue([string]$Key) {
+    return Get-EnvValueFromPath $EnvFile $Key
+}
+
+$AcademyVersion = (Get-EnvValueFromPath $EnvExample 'ACADEMY_VERSION').Trim()
+if ([string]::IsNullOrWhiteSpace($AcademyVersion)) {
+    $AcademyVersion = '1.6.1'
 }
 
 function Set-EnvValue([string]$Key, [string]$Value) {
@@ -66,7 +75,7 @@ function Ensure-Env {
     if (-not (Get-EnvValue 'TOWER_ACADEMY_MCP_TOKEN')) { Set-EnvValue 'TOWER_ACADEMY_MCP_TOKEN' ('num_mcp_' + (New-RandomText 64)) }
     $port = Get-EnvValue 'ACADEMY_PORT'; if (-not $port) { $port = '8080'; Set-EnvValue 'ACADEMY_PORT' $port }
     Set-EnvValue 'APP_URL' "http://localhost:$port"
-    Set-EnvValue 'ACADEMY_VERSION' '1.6.0'
+    Set-EnvValue 'ACADEMY_VERSION' $AcademyVersion
     Normalize-Tower
     if ($created) {
         Write-Host "Configuration locale créée: $EnvFile"
@@ -98,7 +107,7 @@ function Wait-Health {
 function Invoke-Doctor {
     $failures = 0
     Write-Host 'NÜM Academy OS — Doctor'
-    Write-Host 'Version: 1.6.0'
+    Write-Host "Version: $AcademyVersion"
     try { Check-Docker; Write-Host 'Docker / Compose: OK' } catch { Write-Host "ERREUR: $_"; $failures++ }
     Ensure-Env
     if (-not (Get-EnvValue 'APP_KEY')) { Write-Host 'ERREUR: APP_KEY manquante'; $failures++ }
